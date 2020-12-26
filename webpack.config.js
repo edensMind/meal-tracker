@@ -33,11 +33,11 @@ module.exports = {
     extensions: ['*', '.js', '.jsx']
   },
   devServer: {
-    port: config.app.port,
+    port: config.client.port,
     open: true,
-    host: config.app.host,
+    host: config.client.host,
     proxy: {
-      '/api': `http://${config.app.apiHost}:${config.app.apiPort}`
+      '/api': `http://${config.server.host}:${config.server.apiportPort}`
     }
   },
   plugins: [

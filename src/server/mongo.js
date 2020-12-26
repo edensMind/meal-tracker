@@ -5,7 +5,7 @@ var ObjectId = require('mongodb').ObjectId;
 // Mongo Server Settings
 var mongoConfig = {
   db: null,
-  url: `mongodb://${config.db.server}:${config.db.port}/`,
+  url: `mongodb://${config.mongo.host}:${config.mongo.port}/`,
   dbName: 'meal-tracker',
   encountersColl: 'encounters',
   unitsColl: 'units',
