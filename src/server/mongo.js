@@ -5,7 +5,7 @@ var ObjectId = require('mongodb').ObjectId;
 // Mongo Server Settings
 var mongoConfig = {
   db: null,
-  url: `mongodb://${config.mongo.host}:${config.mongo.port}/`,
+  url: `mongodb://${config.mongo.user}:${config.mongo.pass}@${config.mongo.host}:${config.mongo.port}/`,
   dbName: 'meal-tracker',
   encountersColl: 'encounters',
   unitsColl: 'units',
@@ -32,7 +32,7 @@ var getEncounter = function(req, res, next) {
     var encounterId = req.params.id;
     mongoConfig.db.collection(mongoConfig.unitsColl).find({ memberOf: { $all: [ObjectId(encounterId)] } }).toArray(function(err, units) {
       if (err) {
-        return res.status(500).send("Error getting encounter units");
+        return res.status(500).send("Error getting encounter units", err);
       }
       if (!units) {
         return res.status(204).send();
@@ -47,7 +47,7 @@ var getEncounter = function(req, res, next) {
 var getAllEncounters = function(req, res, next) {
     mongoConfig.db.collection(mongoConfig.encountersColl).find({}).toArray(function(err, encounters) {
       if (err) {
-        return res.status(500).send("Error getting encounters");
+        return res.status(500).send(`Error getting encounters: ${err}`);
       }
       if (!encounters) {
         return res.status(204).send();
