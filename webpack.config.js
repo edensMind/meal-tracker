@@ -37,7 +37,7 @@ module.exports = {
     open: true,
     host: config.client.host,
     proxy: {
-      '/api': `http://${config.server.host}:${config.server.apiportPort}`
+      '/api': `http://${config.server.host}:${config.server.port}`
     }
   },
   plugins: [
