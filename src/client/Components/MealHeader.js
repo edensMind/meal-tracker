@@ -7,19 +7,25 @@ class MealHeader extends React.Component {
         super(props)
         this.state = { 
             username : "",
+            date: "",
         }
     }
 
     componentDidMount() {
+        var d = new Date();
+
         GetUser.then(res => {
-            this.setState({ username: res.data.username });
+            this.setState({ username: res.data.username, date: `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`});
         })
+
+        
     }
 
     render () {
         return (
             <div>
                 <Typography variant="h4">Hola {this.state.username}</Typography>
+                <Typography variant="body1">{this.state.date}</Typography>
             </div>
         );
     }
