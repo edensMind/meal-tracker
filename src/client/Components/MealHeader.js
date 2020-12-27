@@ -15,10 +15,11 @@ class MealHeader extends React.Component {
         var d = new Date();
 
         GetUser.then(res => {
-            this.setState({ username: res.data.username, date: `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`});
-        })
-
-        
+            this.setState({ 
+                username: res.data.username, 
+                date: `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
+            });
+        });
     }
 
     render () {
