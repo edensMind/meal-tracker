@@ -6,11 +6,13 @@ const headers = {
     }
 };
 
+const GetUser = axios.get(`/api/getUsername`);
+
 // DB Calls GETs
-const GetUser = () => axios.get(`/api/getUsername`);
-const GetAllFood = () => axios.get(`/api/food`);
+const GetAllFood = axios.get(`/api/food`);
 const GetFoodById = (id) => axios.get(`/api/food/${id}`);
-const GetMealsForTime = (startDate, endDate) => axios.get(`/api/meal/history/${startDate}/${endDate}`);
+const GetMealsForTime = function(startDate, endDate) { return axios.get(`/api/meal/history/${startDate}/${endDate}`); }
+const GetMealById = (id) => axios.get(`/api/meal/${id}`);
 
 // DB Calls POSTs
 const CreateNewFood = (foodData) => {
@@ -57,6 +59,7 @@ export {
     GetAllFood,
     GetFoodById,
     GetMealsForTime,
+    GetMealById,
     CreateNewFood,
     CreateNewMeal,
     AddFoodToMeal,

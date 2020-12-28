@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import './app.css';
-import { makeStyles, ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles';
+import { ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles';
 import {Mealtheme} from "./Mealtheme"
 import MealHeader from './Components/MealHeader'
+import TabPanel from './Components/TabPanel'
 
 export default class App extends Component {
   state = { 
@@ -17,6 +18,7 @@ export default class App extends Component {
     return (
       <MuiThemeProvider  theme={Mealtheme}>
         <MealHeader />
+        <TabPanel />
       </MuiThemeProvider >
     );
   }

@@ -89,6 +89,7 @@ const getMealsByDate = function(req, res, next) {
     '${startDate.getFullYear()}-${startDate.getMonth()+1}-${startDate.getDate()}'
   AND
     '${endDate.getFullYear()}-${endDate.getMonth()+1}-${endDate.getDate()}'
+  ORDER BY date DESC
   `;
 
   // array to hold meal results
