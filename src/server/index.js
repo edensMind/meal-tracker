@@ -25,7 +25,7 @@ app.post('/api/food', mysql.createNewFood, function(req,res){});
 app.post('/api/meal', mysql.createNewMeal, function(req,res){});
 
 // DB Calls PUT
-app.put('/api/mealFood/:mealId/:foodId', mysql.addFoodToMeal, function(req,res){});
+app.put('/api/meal/:id', mysql.addFoodToMeal, function(req,res){});
 app.put('/api/food/:id', mysql.editFoodItem, function(req,res){});
 
 // DB Calls DELETE

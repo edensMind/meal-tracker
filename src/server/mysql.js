@@ -21,21 +21,23 @@ class Database {
   constructor( config ) {
       this.connection = mysql.createConnection(config);
   }
-  query( sql, args ) {
+  query( sql, args, res ) {
       return new Promise( ( resolve, reject ) => {
           this.connection.query( sql, args, ( err, rows ) => {
-              if ( err )
-                  return reject( err );
-              resolve( rows );
+            if ( err ) {
+              return res.status(500).send(`Error calling Database: ${err}`);
+            }  
+            resolve( rows );
           } );
       } );
   }
-  close() {
+  close(res) {
       return new Promise( ( resolve, reject ) => {
           this.connection.end( err => {
-              if ( err )
-                  return reject( err );
-              resolve();
+            if ( err ) {
+              return res.status(500).send(`Error calling Database: ${err}`);
+            }
+            resolve();
           } );
       } );
   }
@@ -69,7 +71,7 @@ const getFoodById = function(req, res, next) {
   WHERE id = ${id}
   `;
 
-  database.query(sql).then( rows => {
+  database.query(sql, [], res).then( rows => {
     return res.status(200).send(rows);
   });
 };
@@ -93,7 +95,7 @@ const getMealsByDate = function(req, res, next) {
   var mealsForTime = [];
 
   // query all meals for day span
-  database.query(sql).then( meals => {
+  database.query(sql, [], res).then( meals => {
     // define new primise object
     var p = new Promise (function (res) {res ();});
 
@@ -129,7 +131,7 @@ const getMealById = function(req, res, next) {
   let mealObject = {};
 
   // query all meals for current day
-  database.query(sql).then( meals => {
+  database.query(sql, [], res).then( meals => {
     // define new primise object
     var p = new Promise (function (res) {res ();});
 
@@ -142,7 +144,7 @@ const getMealById = function(req, res, next) {
         food: []
       };
       // execute promises to get the food for each meal
-      p = p.then (getFoodForMeal (meal.id, mealObject, meals));
+      p = p.then (getFoodForMeal (meal.id, mealObject, meals, res));
     });
 
     p.then (function () {
@@ -180,7 +182,7 @@ const createNewFood = function(req, res, next) {
   ];
 
   // execute insert query
-  database.query(sqlInsert, sqlValues).then( result => {
+  database.query(sqlInsert, sqlValues, res).then( result => {
     // set new inserted food ID to return object
     newFoodObject.id = result.insertId;
     return res.status(200).send(newFoodObject);
@@ -213,7 +215,7 @@ const createNewMeal = function(req, res, next) {
   `;
 
   // execute meal insert query
-  database.query(sqlInsert).then( result => {
+  database.query(sqlInsert, [], res).then( result => {
     // set new inserted food ID to return object
     newMealObject.id = result.insertId;
 
@@ -237,34 +239,161 @@ const createNewMeal = function(req, res, next) {
 ////// ROUTE FUNCTIONS - PUT //////
 // PUT Add Food Item to Meal
 const addFoodToMeal = function(req, res, next) {
+  console.log("BODY:");
+  console.log(req.body);
 
+  // validate :id from URL
+  let mealId = validateIntParam(req.params.id, res);
+
+  // validate food params from body
+  if (!req.body.food || req.body.food.length < 1) {
+    return res.status(400).send("Must include at least one food ID.");
+  }
+  req.body.food.forEach(element => {
+    validateIntParam(element, res);
+  });
+
+  // define new promise object
+  var p = new Promise (function (res) {res ();});
+
+  // iterate over meal food
+  req.body.food.forEach(foodId => {
+    // execute promises to insert the food for meal
+    p = p.then (insertMealFoodRecord (mealId, foodId, res));
+  });
+  
+  p.then (function (err) {
+    // All promises have finished, arrays are filled
+    return res.status(200).send("Success");
+  });
 };
 
 // PUT Edit food item by id
 const editFoodItem = function(req, res, next) {
+  let id = validateIntParam(req.params.id, res);
+  
+  console.log("BODY:");
+  console.log(req.body);
 
+  // build SET statement and collect values for SQL params
+  let setStatement = `SET `;
+  const sqlValues = [];
+
+  // Parse body parameters
+  if(req.body.description && validateStringParam(req.body.description, res)) {
+    setStatement += `description = ?, `;
+    sqlValues.push(req.body.description);
+  }
+
+  if(req.body.calories && validateIntParam(req.body.calories, res)) {
+    setStatement += `calories = ?, `;
+    sqlValues.push(req.body.calories);
+  }
+
+  if(req.body.servingSize && validateStringParam(req.body.servingSize, res)) {
+    setStatement += `servingSize = ?, `;
+    sqlValues.push(req.body.servingSize);
+  }
+
+  if(req.body.image && validateStringParam(req.body.image, res)) {
+    setStatement += `image = ?, `;
+    sqlValues.push(req.body.image);
+  }
+
+  // strip final ", " of SET statement
+  setStatement = setStatement.substring(0, setStatement.length - 2);
+
+  // Proceed with valid changes
+  if(sqlValues.length > 0) {
+    sqlValues.push(id);
+
+    const sql = `
+    UPDATE food
+    ${setStatement}
+    WHERE id = ?
+    `;
+  
+    database.query(sql, sqlValues, res).then( rows => {
+      return res.status(200).send("Success");
+    });
+  }
+  else {
+    return res.status(400).send("Bad Request: No valid change parameters.");
+  }
 };
 
 ////// ROUTE FUNCTIONS - DELETE //////
 // DELETE food item by id
 const removeFoodItem = function(req, res, next) {
+  let id = validateIntParam(req.params.id, res);
 
+  const sql = `
+  DELETE FROM food
+  WHERE id = ?
+  `;
+
+  const sqlValues = [id];
+
+  database.query(sql, sqlValues, res).then( rows => {
+    console.log("Deleted Rows: ", rows.affectedRows);
+    if(rows.affectedRows && rows.affectedRows > 0) {
+      return res.status(200).send("Success");
+    }
+    else {
+      return res.status(204).send();
+    }
+  });
 };
 
-// DELETE food item FROM meal by id
+// DELETE Remove food item FROM meal by id
 const removeFoodFromMeal = function(req, res, next) {
+  let mealId = validateIntParam(req.params.mealId, res);
+  let foodId = validateIntParam(req.params.foodId, res);
 
+  const sql = `
+  DELETE FROM meal_food
+  WHERE meal_id = ? AND food_id = ?
+  `;
+
+  const sqlValues = [mealId, foodId];
+
+  database.query(sql, sqlValues, res).then( rows => {
+    console.log("Deleted Rows: ", rows.affectedRows);
+    if(rows.affectedRows && rows.affectedRows > 0) {
+      return res.status(200).send("Success");
+    }
+    else {
+      return res.status(204).send();
+    }
+  });
 };
 
 // DELETE meal by id
 const removeMeal = function(req, res, next) {
+  let mealId = validateIntParam(req.params.id, res);
 
+  const sql = `
+  DELETE FROM meal
+  WHERE id = ?
+  `;
+
+  const sqlValues = [mealId];
+
+  database.query(sql, sqlValues, res).then( rows => {
+    console.log("Deleted Rows: ", rows.affectedRows);
+    if(rows.affectedRows && rows.affectedRows > 0) {
+      return res.status(200).send("Success");
+    }
+    else {
+      return res.status(204).send();
+    }
+  });
 };
 
 
 ////// SUPPORT FUNCTIONS //////
 // Promise function to return food for a given meal
-function getFoodForMeal (mealId, mealObject, todaysMeals) {
+function getFoodForMeal (mealId, mealObject, todaysMeals, result) {
   return function (prevValue) {
     return new Promise (function (res, rej) {
       const sql = `
@@ -273,7 +402,7 @@ function getFoodForMeal (mealId, mealObject, todaysMeals) {
       join meal_food mf ON mf.food_id = f.id
       where mf.meal_id = ${mealId}
       `;
-      database.query(sql).then( rows => {
+      database.query(sql, [], result).then( rows => {
         mealObject.food = rows;
         todaysMeals.push(mealObject);
         res();
@@ -283,7 +412,7 @@ function getFoodForMeal (mealId, mealObject, todaysMeals) {
 }
 
 // Promise function to insert food for a given meal
-function insertMealFoodRecord (mealId, foodId) {
+function insertMealFoodRecord (mealId, foodId, result) {
   return function (prevValue) {
     return new Promise (function (res, rej) {
       const sql = `
@@ -291,7 +420,7 @@ function insertMealFoodRecord (mealId, foodId) {
       VALUES(?,?)
       `;
       const sqlValues = [mealId, foodId];
-      database.query(sql, sqlValues).then( rows => {
+      database.query(sql, sqlValues, result).then( rows => {
         res();
       });
     });
